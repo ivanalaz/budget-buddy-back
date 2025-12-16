@@ -1,0 +1,22 @@
+# ===== Java / Maven =====
+target/
+*.log
+
+# ===== Environment variables =====
+.env
+.env.local
+.env.dev
+.env.prod
+
+# ===== IDEs =====
+.idea/
+.vscode/
+*.iml
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Misc =====
+node_modules/
+dist/

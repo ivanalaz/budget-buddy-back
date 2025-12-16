@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: finance-app
+
+  # Default to local development unless explicitly overridden (e.g. on Render)
+  profiles:
+    default: dev
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+logging:
+  level:
+    org.springframework.web: INFO
+
