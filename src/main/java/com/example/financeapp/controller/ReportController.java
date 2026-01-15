@@ -1,6 +1,7 @@
 package com.example.financeapp.controller;
 
 import com.example.financeapp.dto.CategoryTotalDto;
+import com.example.financeapp.dto.EntryResponseDto;
 import com.example.financeapp.dto.MonthlySummaryResponseDto;
 import com.example.financeapp.entity.CurrencyCode;
 import com.example.financeapp.service.ReportService;
@@ -30,5 +31,15 @@ public class ReportController {
     ) {
         return ResponseEntity.ok(reportService.getSpendingByCategory(yearMonth, currency));
     }
+
+    @GetMapping("/{yearMonth}/categories/{categoryId}/entries")
+    public ResponseEntity<List<EntryResponseDto>> getMonthlyCategoryEntries(
+            @PathVariable String yearMonth,
+            @PathVariable Long categoryId,
+            @RequestParam(name = "currency", defaultValue = "RSD") CurrencyCode currency
+    ) {
+        return ResponseEntity.ok(reportService.getMonthlyCategoryEntries(yearMonth, categoryId, currency));
+    }
+
 }
 

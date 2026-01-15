@@ -2,6 +2,7 @@ package com.example.financeapp.service;
 
 import com.example.financeapp.dto.CategoryTotalDto;
 import com.example.financeapp.dto.CurrencyTotalDto;
+import com.example.financeapp.dto.EntryResponseDto;
 import com.example.financeapp.dto.MonthlySummaryResponseDto;
 import com.example.financeapp.entity.CurrencyCode;
 import com.example.financeapp.entity.Entry;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,9 +27,18 @@ import java.util.stream.Collectors;
 public class ReportService {
 
     private final EntryRepository entryRepository;
+    private final EntryService entryService;
 
     private Long getCurrentUserId() {
         return 1L;
+    }
+
+    public List<EntryResponseDto> getMonthlyCategoryEntries(String yearMonth, Long categoryId, CurrencyCode currency) {
+        // Delegate to EntryService to keep response shape + ordering consistent with /api/entries
+        YearMonth ym = YearMonth.parse(yearMonth);
+        LocalDate from = ym.atDay(1);
+        LocalDate to = ym.atEndOfMonth();
+        return entryService.getEntries(from, to, Optional.of(categoryId), Optional.ofNullable(currency));
     }
 
     public List<CategoryTotalDto> getSpendingByCategory(String yearMonth, CurrencyCode currency) {
