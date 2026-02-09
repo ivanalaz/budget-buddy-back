@@ -10,6 +10,7 @@ import com.example.financeapp.entity.User;
 import com.example.financeapp.exception.ResourceNotFoundException;
 import com.example.financeapp.repository.CategoryRepository;
 import com.example.financeapp.repository.EntryRepository;
+import com.example.financeapp.repository.RecurringInstanceRepository;
 import com.example.financeapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class EntryService {
     private final EntryRepository entryRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final RecurringInstanceRepository recurringInstanceRepository;
 
     private Long getCurrentUserId() {
         return 1L;
@@ -111,6 +113,9 @@ public class EntryService {
         entry.setDate(dto.getDate());
         entry.setNote(dto.getNote());
 
+        // Mark as manually overridden if this was a generated entry
+        markAsManualOverrideIfGenerated(entry);
+
         Entry updated = entryRepository.save(entry);
         return mapToDto(updated);
     }
@@ -121,11 +126,16 @@ public class EntryService {
         Entry entry = entryRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Entry not found"));
 
+        // If this entry was generated from a recurring rule, delete the instance link first
+        // to avoid foreign key constraint violation
+        recurringInstanceRepository.findByTransactionId(id)
+                .ifPresent(recurringInstanceRepository::delete);
+
         entryRepository.delete(entry);
     }
 
     private EntryResponseDto mapToDto(Entry entry) {
-        return EntryResponseDto.builder()
+        EntryResponseDto.EntryResponseDtoBuilder builder = EntryResponseDto.builder()
                 .id(entry.getId())
                 .categoryId(entry.getCategory().getId())
                 .categoryName(entry.getCategory().getName())
@@ -134,8 +144,33 @@ public class EntryService {
                 .amount(entry.getAmount())
                 .currency(entry.getCurrency())
                 .date(entry.getDate())
-                .note(entry.getNote())
-                .build();
+                .note(entry.getNote());
+
+        // Add recurring metadata if this entry was generated from a rule
+        if (entry.getRecurringRule() != null) {
+            builder.recurringRuleId(entry.getRecurringRule().getId())
+                    .recurringRuleName(entry.getRecurringRule().getName())
+                    .scheduledFor(entry.getScheduledFor())
+                    .isGenerated(true);
+        } else {
+            builder.isGenerated(false);
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Marks an entry as manually overridden if it was generated from a recurring rule.
+     * This prevents bulk updates from the rule from overwriting user edits.
+     */
+    private void markAsManualOverrideIfGenerated(Entry entry) {
+        if (entry.getRecurringRule() != null) {
+            recurringInstanceRepository.findByTransactionId(entry.getId())
+                    .ifPresent(instance -> {
+                        instance.setIsManualOverride(true);
+                        recurringInstanceRepository.save(instance);
+                    });
+        }
     }
 }
 

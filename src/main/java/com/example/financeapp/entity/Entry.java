@@ -50,6 +50,21 @@ public class Entry {
 
     private String note;
 
+    /**
+     * Optional reference to the recurring rule that generated this entry.
+     * Null for manually created entries.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recurring_rule_id")
+    private RecurringRule recurringRule;
+
+    /**
+     * The originally scheduled date if this entry was auto-generated.
+     * Useful for tracking if the user changed the date from the scheduled one.
+     */
+    @Column(name = "scheduled_for")
+    private LocalDate scheduledFor;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
